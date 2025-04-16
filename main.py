@@ -1,7 +1,8 @@
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from database import engine, Base
-from router import user, llm_key
+from router import llm_keys, user
+from router import user, llm_provider
 
 
 @asynccontextmanager
@@ -13,5 +14,6 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-app.include_router(llm_key.router)
+app.include_router(llm_keys.router)
 app.include_router(user.router)
+app.include_router(llm_provider.router)
