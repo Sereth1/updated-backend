@@ -1,12 +1,17 @@
 from fastapi import FastAPI
+from contextlib import asynccontextmanager
 from database import engine, Base
-from router import user  # <--- make sure this path is correct
+from router import user, llm_key
 
-app = FastAPI()
 
-@app.on_event("startup")
-async def startup():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+    yield  # App is ready
+    # You could close resources here on shutdown
 
-app.include_router(user.router)  # <--- this is what makes /users work
+app = FastAPI(lifespan=lifespan)
+
+app.include_router(llm_key.router)
+app.include_router(user.router)
