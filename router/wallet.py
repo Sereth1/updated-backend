@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy.orm import selectinload
 from uuid import UUID
 from decimal import Decimal
 
@@ -27,7 +28,12 @@ async def create_wallet(user_id: str, db: AsyncSession = Depends(get_session)):
 
 @router.get("/wallet/{user_id}", response_model=WalletOut)
 async def get_wallet(user_id: str, db: AsyncSession = Depends(get_session)):
-    result = await db.execute(select(Wallet).where(Wallet.user_id == user_id))
+    # Use selectinload to eagerly load the balances relationship
+    result = await db.execute(
+        select(Wallet)
+        .where(Wallet.user_id == user_id)
+        .options(selectinload(Wallet.balances))
+    )
     wallet = result.scalar_one_or_none()
     if not wallet:
         raise HTTPException(status_code=404, detail="Wallet not found")
