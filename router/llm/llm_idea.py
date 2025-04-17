@@ -7,6 +7,9 @@ from database import get_session
 from models.llm.llm_idea import LLMIdea
 from schemas.llm.llm_idea import LLMIdeaCreate, LLMIdeaOut
 
+
+
+
 router = APIRouter()
 
 @router.post("/llm-ideas", response_model=LLMIdeaOut)

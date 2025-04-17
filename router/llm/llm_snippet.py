@@ -7,6 +7,17 @@ from database import get_session
 from models.llm.llm_snippet import LLMSnippet
 from schemas.llm.llm_snippet import LLMSnippetCreate, LLMSnippetOut
 
+
+async def get_user_snippets(user_id: str, limit: int = 5, db: AsyncSession = Depends(get_session)) -> list[str]:
+    result = await db.execute(
+        select(LLMSnippet.content)
+        .where(LLMSnippet.user_id == user_id)
+        .order_by(LLMSnippet.created_at.desc())
+        .limit(limit)
+    )
+    return result.scalars().all()
+
+
 router = APIRouter()
 
 @router.post("/llm-snippets", response_model=LLMSnippetOut)
