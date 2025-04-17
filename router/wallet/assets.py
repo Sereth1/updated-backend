@@ -3,8 +3,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
 from database import get_session
-from models.asset import Asset
-from schemas.asset import AssetOut
+from models.wallet.asset import Asset
+from schemas.wallet.asset import AssetOut
 
 router = APIRouter()
 

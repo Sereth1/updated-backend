@@ -4,17 +4,17 @@ from sqlalchemy.future import select
 from uuid import UUID
 
 from database import get_session
-from models.llm_idea import LLMIdea
-from models.llm_message import LLMMessage
-from models.llm_snippet import LLMSnippet
-from models.llm_memory_collection import LLMMemoryCollection
-from models.llm_memory_snippet import LLMMemorySnippet
+from models.llm.llm_idea import LLMIdea
+from models.llm.llm_message import LLMMessage
+from models.llm.llm_snippet import LLMSnippet
+from models.llm.llm_memory_collection import LLMMemoryCollection
+from models.llm.llm_memory_snippet import LLMMemorySnippet
 
-from schemas.llm_idea import LLMIdeaCreate, LLMIdeaOut
-from schemas.llm_message import LLMMessageCreate, LLMMessageOut
-from schemas.llm_snippet import LLMSnippetCreate, LLMSnippetOut
-from schemas.llm_memory_collection import LLMMemoryCollectionCreate, LLMMemoryCollectionOut
-from schemas.llm_memory_snippet import LLMMemorySnippetCreate, LLMMemorySnippetOut
+from schemas.llm.llm_idea import LLMIdeaCreate, LLMIdeaOut
+from schemas.llm.llm_message import LLMMessageCreate, LLMMessageOut
+from schemas.llm.llm_snippet import LLMSnippetCreate, LLMSnippetOut
+from schemas.llm.llm_memory_collection import LLMMemoryCollectionCreate, LLMMemoryCollectionOut
+from schemas.llm.llm_memory_snippet import LLMMemorySnippetCreate, LLMMemorySnippetOut
 
 router = APIRouter()
 

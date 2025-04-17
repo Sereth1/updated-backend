@@ -3,8 +3,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from database import get_session
-from models.llm_key import LLMKey
-from schemas.llm_key import LLMKeyCreate, LLMKeyOut
+from models.llm.llm_key import LLMKey
+from schemas.llm.llm_key import LLMKeyCreate, LLMKeyOut
 from typing import List
 import uuid
 

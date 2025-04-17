@@ -2,8 +2,8 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from database import get_session
-from models.llm_provider import LLMProvider
-from schemas.llm_provider import LLMProviderOut
+from models.llm.llm_provider import LLMProvider
+from schemas.llm.llm_provider import LLMProviderOut
 from typing import List
 
 router = APIRouter()

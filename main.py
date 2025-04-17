@@ -1,9 +1,11 @@
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from database import engine, Base
-from router import llm_keys, user, llm_provider, wallet, assets
+from router import user
 from middleware import error_handler_middleware
-from fastapi.middleware.cors import CORSMiddleware  
+from fastapi.middleware.cors import CORSMiddleware
+from router.llm import llm_keys, llm_provider, llm_memory
+from router.wallet import assets, wallet  
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -22,3 +24,4 @@ app.include_router(user.router)
 app.include_router(llm_provider.router)
 app.include_router(wallet.router)
 app.include_router(assets.router)
+app.include_router(llm_memory.router)

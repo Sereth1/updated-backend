@@ -6,11 +6,11 @@ from uuid import UUID
 from decimal import Decimal
 
 from database import get_session
-from models.wallet import Wallet, WalletBalance
-from models.asset import Asset
-from schemas.wallet import WalletOut
+from models.wallet.wallet import Wallet, WalletBalance
+from models.wallet.asset import Asset
+from schemas.wallet.wallet import WalletOut
 from schemas.wallet_balance import WalletBalanceOut
-from schemas.asset import AssetOut
+from schemas.wallet.asset import AssetOut
 
 router = APIRouter()
 @router.post("/wallet", response_model=WalletOut)

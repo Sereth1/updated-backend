@@ -2,7 +2,7 @@ from pydantic import BaseModel
 from typing import List
 from uuid import UUID
 from datetime import datetime
-from .wallet_balance import WalletBalanceOut
+from ..wallet_balance import WalletBalanceOut
 
 class WalletOut(BaseModel):
     id: UUID
