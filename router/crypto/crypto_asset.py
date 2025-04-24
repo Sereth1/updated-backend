@@ -23,7 +23,7 @@ MAX_RETRIES = 3
 RETRY_DELAY = 10
 LIVE_UPDATE_INTERVAL = 1800  # 30 minutes
 HISTORICAL_UPDATE_INTERVAL = 3600  # 1 hour
-CHECK_INTERVAL = 25  # Check every 25 seconds
+CHECK_INTERVAL = 1500  # Check every 25 minutes
 
 class RateLimiter:
     def __init__(self, max_requests: int, time_window: int):
@@ -242,23 +242,23 @@ async def start_data_updates():
                     print("Starting live data update...")
                     await update_live_data(db)
                     last_live_update = current_time
-                    print(f"Next live update in {LIVE_UPDATE_INTERVAL} seconds")
+                    print(f"Next live update in {LIVE_UPDATE_INTERVAL/60} minutes")
                 
                 # Check if it's time for historical update (every hour)
                 if (current_time - last_historical_update).total_seconds() >= HISTORICAL_UPDATE_INTERVAL:
                     print("Starting historical data update...")
                     await update_historical_data(db)
                     last_historical_update = current_time
-                    print(f"Next historical update in {HISTORICAL_UPDATE_INTERVAL} seconds")
+                    print(f"Next historical update in {HISTORICAL_UPDATE_INTERVAL/60} minutes")
                 
                 # Sleep for CHECK_INTERVAL seconds before checking again
-                print(f"Sleeping for {CHECK_INTERVAL} seconds before next check...")
+                print(f"Sleeping for {CHECK_INTERVAL/60} minutes before next check...")
                 await asyncio.sleep(CHECK_INTERVAL)
                 
             except Exception as e:
                 print(f"Error in data update cycle: {str(e)}")
                 await db.rollback()
-                print(f"Sleeping for {CHECK_INTERVAL} seconds before retrying...")
+                print(f"Sleeping for {CHECK_INTERVAL/60} minutes before retrying...")
                 await asyncio.sleep(CHECK_INTERVAL)
 
 @router.on_event("startup")
