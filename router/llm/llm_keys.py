@@ -1,12 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from database import get_session
 from models.llm.llm_key import LLMKey
 from schemas.llm.llm_key import LLMKeyCreate, LLMKeyOut
 from typing import List
-import uuid
+from uuid import UUID
 
 router = APIRouter()
 
@@ -41,7 +40,7 @@ async def create_llm_key(
 
 
 @router.delete("/llm-keys/{id}", status_code=204)
-async def delete_llm_key(id: str, db: AsyncSession = Depends(get_session)):
+async def delete_llm_key(id: UUID, db: AsyncSession = Depends(get_session)):
     result = await db.execute(select(LLMKey).where(LLMKey.id == id))
     key = result.scalar_one_or_none()
     if not key:
@@ -51,7 +50,7 @@ async def delete_llm_key(id: str, db: AsyncSession = Depends(get_session)):
 
 @router.put("/llm-keys/{id}", response_model=LLMKeyOut)
 async def update_llm_key(
-    id: str,
+    id: UUID,
     payload: LLMKeyCreate,
     db: AsyncSession = Depends(get_session)
 ):
@@ -59,12 +58,13 @@ async def update_llm_key(
     key = result.scalar_one_or_none()
     if not key:
         raise HTTPException(status_code=404, detail="LLM key not found")
-
-    key.api_key = payload.api_key
+    
+    for field, value in payload.dict(exclude_unset=True).items():
+        setattr(key, field, value)
+    
     await db.commit()
     await db.refresh(key)
     return key
-
 
 @router.get("/llm-keys/{user_id}", response_model=List[LLMKeyOut])
 async def get_llm_keys(user_id: str, db: AsyncSession = Depends(get_session)):

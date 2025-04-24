@@ -4,11 +4,11 @@ from database import engine, Base
 from router import user
 from middleware import error_handler_middleware
 from fastapi.middleware.cors import CORSMiddleware
-from router.llm import llm_idea, llm_message, llm_snippet, llm_collection
+from router.llm import llm_idea, llm_message, llm_snippet, llm_collection, llm_provider, llm_keys
 from router.wallet import assets, wallet
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI):       
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     yield
@@ -26,6 +26,7 @@ app = FastAPI(
         {"name": "LLM Collections", "description": "Group useful snippets into collections for retrieval or reference."},
         {"name": "Wallet", "description": "Wallet creation, crypto/fiat deposits, and user balances"},
         {"name": "Assets", "description": "Supported cryptocurrencies, tokens, and fiat currencies"},
+        {"name": "LLM Providers", "description": "Available LLM API providers"},
     ]
 )
 
@@ -40,3 +41,5 @@ app.include_router(llm_snippet, tags=["LLM Snippets"])
 app.include_router(llm_collection, tags=["LLM Collections"])
 app.include_router(wallet.router, tags=["Wallet"])
 app.include_router(assets.router, tags=["Assets"])
+app.include_router(llm_provider, tags=["LLM Providers"])
+app.include_router(llm_keys, tags=["LLM Keys"])
