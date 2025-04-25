@@ -22,7 +22,7 @@ COINMARKETCAP_API_KEY = "d363f63a-c24f-46ab-be0f-e80bde08df62"
 MAX_RETRIES = 3
 RETRY_DELAY = 10
 LIVE_UPDATE_INTERVAL = 1800  # 30 minutes
-HISTORICAL_UPDATE_INTERVAL = 43200  # 12 hours
+HISTORICAL_UPDATE_INTERVAL = 86400  # 24 hours
 CHECK_INTERVAL = 1500  # Check every 25 minutes
 
 class RateLimiter:
@@ -205,8 +205,8 @@ async def update_historical_data(db: AsyncSession):
                     select(CryptoHistoricalData)
                     .where(
                         CryptoHistoricalData.asset_id == asset_data["symbol"],
-                        CryptoHistoricalData.timestamp >= current_time - timedelta(hours=12),
-                        CryptoHistoricalData.interval == "12h"
+                        CryptoHistoricalData.timestamp >= current_time - timedelta(hours=24),
+                        CryptoHistoricalData.interval == "24h"
                     )
                 )
                 existing_data = result.scalar_one_or_none()
@@ -220,7 +220,7 @@ async def update_historical_data(db: AsyncSession):
                         volume_usd_24hr=float(quote["volume_24h"]),
                         change_percent_24hr=float(quote["percent_change_24h"]),
                         timestamp=current_time,
-                        interval="12h"
+                        interval="24h"
                     )
                     db.add(historical_data)
                     success_count += 1
