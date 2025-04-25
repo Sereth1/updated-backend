@@ -22,7 +22,7 @@ COINMARKETCAP_API_KEY = "d363f63a-c24f-46ab-be0f-e80bde08df62"
 MAX_RETRIES = 3
 RETRY_DELAY = 10
 LIVE_UPDATE_INTERVAL = 1800  # 30 minutes
-HISTORICAL_UPDATE_INTERVAL = 3600  # 1 hour
+HISTORICAL_UPDATE_INTERVAL = 43200  # 12 hours
 CHECK_INTERVAL = 1500  # Check every 25 minutes
 
 class RateLimiter:
@@ -145,27 +145,34 @@ async def update_live_data(db: AsyncSession):
                 await ensure_asset_exists(db, asset_data)
                 
                 quote = asset_data["quote"]["USD"]
-                live_data_id = f"{asset_data['symbol']}_{current_time.strftime('%Y%m%d_%H%M%S')}"
                 
-                live_data = CryptoLiveData(
-                    id=live_data_id,
-                    asset_id=asset_data["symbol"],
-                    price_usd=float(quote["price"]),
-                    market_cap_usd=float(quote["market_cap"]),
-                    volume_usd_24hr=float(quote["volume_24h"]),
-                    change_percent_24hr=float(quote["percent_change_24h"]),
-                    timestamp=current_time
-                )
-                
-                # Check if data already exists
+                # Check for existing live data for this asset
                 result = await db.execute(
                     select(CryptoLiveData)
-                    .where(
-                        CryptoLiveData.asset_id == asset_data["symbol"],
-                        CryptoLiveData.timestamp == current_time
-                    )
+                    .where(CryptoLiveData.asset_id == asset_data["symbol"])
+                    .order_by(CryptoLiveData.timestamp.desc())
                 )
-                if not result.scalar_one_or_none():
+                existing_data = result.scalar_one_or_none()
+                
+                if existing_data:
+                    # Update existing data
+                    existing_data.price_usd = float(quote["price"])
+                    existing_data.market_cap_usd = float(quote["market_cap"])
+                    existing_data.volume_usd_24hr = float(quote["volume_24h"])
+                    existing_data.change_percent_24hr = float(quote["percent_change_24h"])
+                    existing_data.timestamp = current_time
+                    success_count += 1
+                else:
+                    # Create new data if none exists
+                    live_data = CryptoLiveData(
+                        id=f"{asset_data['symbol']}_{current_time.strftime('%Y%m%d_%H%M%S')}",
+                        asset_id=asset_data["symbol"],
+                        price_usd=float(quote["price"]),
+                        market_cap_usd=float(quote["market_cap"]),
+                        volume_usd_24hr=float(quote["volume_24h"]),
+                        change_percent_24hr=float(quote["percent_change_24h"]),
+                        timestamp=current_time
+                    )
                     db.add(live_data)
                     success_count += 1
             except Exception as e:
@@ -193,27 +200,28 @@ async def update_historical_data(db: AsyncSession):
                 quote = asset_data["quote"]["USD"]
                 historical_data_id = f"{asset_data['symbol']}_{current_time.strftime('%Y%m%d_%H%M%S')}"
                 
-                historical_data = CryptoHistoricalData(
-                    id=historical_data_id,
-                    asset_id=asset_data["symbol"],
-                    price_usd=float(quote["price"]),
-                    market_cap_usd=float(quote["market_cap"]),
-                    volume_usd_24hr=float(quote["volume_24h"]),
-                    change_percent_24hr=float(quote["percent_change_24h"]),
-                    timestamp=current_time,
-                    interval="1h"
-                )
-                
-                # Check if data already exists
+                # Check if historical data already exists for this time period
                 result = await db.execute(
                     select(CryptoHistoricalData)
                     .where(
                         CryptoHistoricalData.asset_id == asset_data["symbol"],
-                        CryptoHistoricalData.timestamp == current_time,
-                        CryptoHistoricalData.interval == "1h"
+                        CryptoHistoricalData.timestamp >= current_time - timedelta(hours=12),
+                        CryptoHistoricalData.interval == "12h"
                     )
                 )
-                if not result.scalar_one_or_none():
+                existing_data = result.scalar_one_or_none()
+                
+                if not existing_data:
+                    historical_data = CryptoHistoricalData(
+                        id=historical_data_id,
+                        asset_id=asset_data["symbol"],
+                        price_usd=float(quote["price"]),
+                        market_cap_usd=float(quote["market_cap"]),
+                        volume_usd_24hr=float(quote["volume_24h"]),
+                        change_percent_24hr=float(quote["percent_change_24h"]),
+                        timestamp=current_time,
+                        interval="12h"
+                    )
                     db.add(historical_data)
                     success_count += 1
             except Exception as e:
