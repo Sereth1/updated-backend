@@ -35,6 +35,15 @@ app = FastAPI(
 # Add error handling middleware
 app.middleware("http")(error_handler_middleware)
 
+# Configure CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "https://a-gi-os-updated.vercel.app"],  # Only allow these origins
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
+)
+
 # Include routers with tags
 app.include_router(user.router, tags=["Users"])
 app.include_router(llm_idea, tags=["LLM Ideas"])
