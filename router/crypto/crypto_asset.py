@@ -121,14 +121,25 @@ async def ensure_asset_exists(db: AsyncSession, asset_data: dict):
             # Create new asset
             new_asset = CryptoAsset(
                 id=asset_data["symbol"],
-                cmc_rank=int(asset_data["cmc_rank"]),
-                symbol=asset_data["symbol"],
                 name=asset_data["name"],
-                supply=float(asset_data["circulating_supply"]),
-                max_supply=float(asset_data["max_supply"]) if asset_data["max_supply"] else None,
+                symbol=asset_data["symbol"],
+                slug=asset_data["slug"],
+                num_market_pairs=asset_data["num_market_pairs"],
+                date_added=asset_data["date_added"],
+                tags=asset_data["tags"],
+                max_supply=asset_data["max_supply"],
+                circulating_supply=asset_data["circulating_supply"],
+                total_supply=asset_data["total_supply"],
+                infinite_supply=asset_data["infinite_supply"],
+                platform=asset_data["platform"],
+                cmc_rank=asset_data["cmc_rank"],
+                self_reported_circulating_supply=asset_data["self_reported_circulating_supply"],
+                self_reported_market_cap=asset_data["self_reported_market_cap"],
+                tvl_ratio=asset_data["tvl_ratio"],
+                last_updated=asset_data["last_updated"],
+                price_usd=float(quote["price"]),
                 market_cap=float(quote["market_cap"]),
                 volume_24h=float(quote["volume_24h"]),
-                price_usd=float(quote["price"]),
                 percent_change_24h=float(quote["percent_change_24h"])
             )
             db.add(new_asset)
