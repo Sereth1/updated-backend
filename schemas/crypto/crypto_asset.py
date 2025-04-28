@@ -1,27 +1,30 @@
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
 
 class CryptoAssetBase(BaseModel):
-    id: str
-    rank: int
-    symbol: str
     name: str
-    supply: float
+    symbol: str
+    slug: str
+    num_market_pairs: int
+    date_added: datetime
+    tags: List[str]
     max_supply: Optional[float] = None
-    market_cap_usd: float
-    volume_usd_24hr: float
-    price_usd: float
-    change_percent_24hr: float
-    vwap_24hr: Optional[float] = None
-    explorer: Optional[str] = None
+    circulating_supply: float
+    total_supply: float
+    infinite_supply: bool
+    platform: Optional[str] = None
+    cmc_rank: int
+    self_reported_circulating_supply: Optional[float] = None
+    self_reported_market_cap: Optional[float] = None
+    tvl_ratio: Optional[float] = None
 
 class CryptoAssetCreate(CryptoAssetBase):
-    pass
+    id: str
 
 class CryptoAssetOut(CryptoAssetBase):
-    created_at: datetime
-    updated_at: Optional[datetime] = None
+    id: str
+    last_updated: datetime
 
     class Config:
         from_attributes = True 

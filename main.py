@@ -6,7 +6,7 @@ from middleware import error_handler_middleware
 from fastapi.middleware.cors import CORSMiddleware
 from router.llm import llm_idea, llm_message, llm_snippet, llm_collection, llm_provider, llm_keys
 from router.wallet import assets, wallet
-from router.crypto import crypto_asset
+from router.crypto import crypto_asset, crypto_live_data, crypto_historical_data
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):       
@@ -55,3 +55,5 @@ app.include_router(assets.router, tags=["Assets"])
 app.include_router(llm_provider, tags=["LLM Providers"])
 app.include_router(llm_keys, tags=["LLM Keys"])
 app.include_router(crypto_asset, prefix="/crypto", tags=["Crypto"])
+app.include_router(crypto_live_data, prefix="/crypto", tags=["Crypto"])
+app.include_router(crypto_historical_data, prefix="/crypto", tags=["Crypto"])

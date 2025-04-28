@@ -35,7 +35,7 @@ class CryptoAsset(CryptoAssetBase):
     updated_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class CryptoLiveDataBase(BaseModel):
     asset_id: str
@@ -63,7 +63,7 @@ class CryptoLiveData(CryptoLiveDataBase):
     last_updated: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class CryptoHistoricalDataBase(BaseModel):
     asset_id: str
@@ -93,4 +93,4 @@ class CryptoHistoricalData(CryptoHistoricalDataBase):
     id: int
 
     class Config:
-        orm_mode = True 
+        from_attributes = True 

@@ -1,21 +1,30 @@
 from pydantic import BaseModel
+from typing import Optional
 from datetime import datetime
-from typing import Literal
 
 class CryptoHistoricalDataBase(BaseModel):
     asset_id: str
     price_usd: float
-    market_cap_usd: float
-    volume_usd_24hr: float
-    change_percent_24hr: float
-    interval: Literal['1m', '5m', '1h', '1d']
+    volume_24h: float
+    volume_change_24h: float
+    percent_change_1h: float
+    percent_change_24h: float
+    percent_change_7d: float
+    percent_change_30d: float
+    percent_change_60d: float
+    percent_change_90d: float
+    market_cap: float
+    market_cap_dominance: float
+    fully_diluted_market_cap: float
+    tvl: Optional[float] = None
+    interval: str
+    timestamp: datetime
 
 class CryptoHistoricalDataCreate(CryptoHistoricalDataBase):
-    pass
+    id: str
 
 class CryptoHistoricalDataOut(CryptoHistoricalDataBase):
     id: str
-    timestamp: datetime
 
     class Config:
         from_attributes = True 

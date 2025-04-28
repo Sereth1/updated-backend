@@ -7,12 +7,13 @@ import asyncio
 from datetime import datetime, timedelta
 import os
 from database import get_session, engine
-from models.crypto.crypto_asset import CryptoAsset
+from models.crypto import CryptoAsset
 from models.crypto.crypto_live_data import CryptoLiveData
 from models.crypto.crypto_historical_data import CryptoHistoricalData
-from schemas.crypto.crypto_asset import CryptoAssetCreate, CryptoAssetOut
+from schemas.crypto import CryptoAssetCreate, CryptoAssetOut
 from schemas.crypto.crypto_live_data import CryptoLiveDataOut
 from schemas.crypto.crypto_historical_data import CryptoHistoricalDataOut
+import uuid
 
 router = APIRouter()
 
@@ -367,6 +368,44 @@ async def get_crypto_asset(asset_id: str, db: AsyncSession = Depends(get_session
     result = await db.execute(
         select(CryptoAsset).where(CryptoAsset.id == asset_id)
     )
+    asset = result.scalar_one_or_none()
+    if not asset:
+        raise HTTPException(status_code=404, detail="Asset not found")
+    return asset
+
+@router.post("/assets", response_model=CryptoAssetOut)
+async def create_crypto_asset(asset: CryptoAssetCreate, db: AsyncSession = Depends(get_session)):
+    db_asset = CryptoAsset(
+        id=str(uuid.uuid4()),
+        name=asset.name,
+        symbol=asset.symbol,
+        slug=asset.slug,
+        num_market_pairs=asset.num_market_pairs,
+        date_added=asset.date_added,
+        tags=asset.tags,
+        max_supply=asset.max_supply,
+        circulating_supply=asset.circulating_supply,
+        total_supply=asset.total_supply,
+        infinite_supply=asset.infinite_supply,
+        platform=asset.platform,
+        cmc_rank=asset.cmc_rank,
+        self_reported_circulating_supply=asset.self_reported_circulating_supply,
+        self_reported_market_cap=asset.self_reported_market_cap,
+        tvl_ratio=asset.tvl_ratio
+    )
+    db.add(db_asset)
+    await db.commit()
+    await db.refresh(db_asset)
+    return db_asset
+
+@router.get("/assets", response_model=List[CryptoAssetOut])
+async def get_crypto_assets(db: AsyncSession = Depends(get_session)):
+    result = await db.execute(select(CryptoAsset))
+    return result.scalars().all()
+
+@router.get("/assets/{asset_id}", response_model=CryptoAssetOut)
+async def get_crypto_asset(asset_id: str, db: AsyncSession = Depends(get_session)):
+    result = await db.execute(select(CryptoAsset).where(CryptoAsset.id == asset_id))
     asset = result.scalar_one_or_none()
     if not asset:
         raise HTTPException(status_code=404, detail="Asset not found")
