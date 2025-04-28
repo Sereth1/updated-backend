@@ -22,9 +22,9 @@ COINMARKETCAP_API_URL = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/lis
 COINMARKETCAP_API_KEY = "d363f63a-c24f-46ab-be0f-e80bde08df62"
 MAX_RETRIES = 3
 RETRY_DELAY = 10
-LIVE_UPDATE_INTERVAL = 1800  # 30 minutes
-HISTORICAL_UPDATE_INTERVAL = 86400  # 24 hours
-CHECK_INTERVAL = 1500  # Check every 25 minutes
+LIVE_UPDATE_INTERVAL = 3600  # 1 hour
+HISTORICAL_UPDATE_INTERVAL = 43200  # 12 hours
+CHECK_INTERVAL = 300  # 5 minutes
 
 class RateLimiter:
     def __init__(self, max_requests: int, time_window: int):
@@ -97,41 +97,47 @@ async def ensure_asset_exists(db: AsyncSession, asset_data: dict):
     """Ensure the asset exists in the database before saving its data."""
     try:
         quote = asset_data["quote"]["USD"]
-        asset = CryptoAsset(
-            id=asset_data["symbol"],
-            rank=int(asset_data["cmc_rank"]),
-            symbol=asset_data["symbol"],
-            name=asset_data["name"],
-            supply=float(asset_data["circulating_supply"]),
-            max_supply=float(asset_data["max_supply"]) if asset_data["max_supply"] else None,
-            market_cap_usd=float(quote["market_cap"]),
-            volume_usd_24hr=float(quote["volume_24h"]),
-            price_usd=float(quote["price"]),
-            change_percent_24hr=float(quote["percent_change_24h"]),
-            vwap_24hr=None,
-            explorer=asset_data.get("explorer")
-        )
-
-        # Check if asset exists
+        
+        # First check if the asset exists
         result = await db.execute(
-            select(CryptoAsset).where(CryptoAsset.id == asset.id)
+            select(CryptoAsset).where(CryptoAsset.id == asset_data["symbol"])
         )
         existing_asset = result.scalar_one_or_none()
-
-        if not existing_asset:
-            db.add(asset)
-            await db.commit()
-            print(f"Created new asset: {asset.symbol}")
-        else:
+        
+        if existing_asset:
             # Update existing asset
-            for key, value in asset.__dict__.items():
-                if not key.startswith("_"):
-                    setattr(existing_asset, key, value)
+            existing_asset.cmc_rank = int(asset_data["cmc_rank"])
+            existing_asset.symbol = asset_data["symbol"]
+            existing_asset.name = asset_data["name"]
+            existing_asset.supply = float(asset_data["circulating_supply"])
+            existing_asset.max_supply = float(asset_data["max_supply"]) if asset_data["max_supply"] else None
+            existing_asset.market_cap = float(quote["market_cap"])
+            existing_asset.volume_24h = float(quote["volume_24h"])
+            existing_asset.price_usd = float(quote["price"])
+            existing_asset.percent_change_24h = float(quote["percent_change_24h"])
             await db.commit()
-            print(f"Updated existing asset: {asset.symbol}")
+            print(f"Updated existing asset: {asset_data['symbol']}")
+        else:
+            # Create new asset
+            new_asset = CryptoAsset(
+                id=asset_data["symbol"],
+                cmc_rank=int(asset_data["cmc_rank"]),
+                symbol=asset_data["symbol"],
+                name=asset_data["name"],
+                supply=float(asset_data["circulating_supply"]),
+                max_supply=float(asset_data["max_supply"]) if asset_data["max_supply"] else None,
+                market_cap=float(quote["market_cap"]),
+                volume_24h=float(quote["volume_24h"]),
+                price_usd=float(quote["price"]),
+                percent_change_24h=float(quote["percent_change_24h"])
+            )
+            db.add(new_asset)
+            await db.commit()
+            print(f"Created new asset: {asset_data['symbol']}")
+            
     except Exception as e:
         await db.rollback()
-        print(f"Error ensuring asset exists: {str(e)}")
+        print(f"Error ensuring asset exists for {asset_data['symbol']}: {str(e)}")
         raise
 
 async def update_live_data(db: AsyncSession):
@@ -139,6 +145,7 @@ async def update_live_data(db: AsyncSession):
         assets_data = await fetch_cmc_data_with_retry()
         current_time = datetime.utcnow()
         success_count = 0
+        error_count = 0
         
         for asset_data in assets_data:
             try:
@@ -147,44 +154,42 @@ async def update_live_data(db: AsyncSession):
                 
                 quote = asset_data["quote"]["USD"]
                 
-                # Check for existing live data for this asset
-                result = await db.execute(
-                    select(CryptoLiveData)
-                    .where(CryptoLiveData.asset_id == asset_data["symbol"])
-                    .order_by(CryptoLiveData.timestamp.desc())
+                # Create new live data entry
+                live_data = CryptoLiveData(
+                    id=f"{asset_data['symbol']}_{current_time.strftime('%Y%m%d_%H%M%S')}",
+                    asset_id=asset_data["symbol"],
+                    price_usd=float(quote["price"]),
+                    market_cap=float(quote["market_cap"]),
+                    volume_24h=float(quote["volume_24h"]),
+                    volume_change_24h=float(quote["volume_change_24h"]) if "volume_change_24h" in quote else None,
+                    percent_change_1h=float(quote["percent_change_1h"]) if "percent_change_1h" in quote else None,
+                    percent_change_24h=float(quote["percent_change_24h"]),
+                    percent_change_7d=float(quote["percent_change_7d"]) if "percent_change_7d" in quote else None,
+                    percent_change_30d=float(quote["percent_change_30d"]) if "percent_change_30d" in quote else None,
+                    percent_change_60d=float(quote["percent_change_60d"]) if "percent_change_60d" in quote else None,
+                    percent_change_90d=float(quote["percent_change_90d"]) if "percent_change_90d" in quote else None,
+                    market_cap_dominance=float(quote["market_cap_dominance"]) if "market_cap_dominance" in quote else None,
+                    fully_diluted_market_cap=float(quote["fully_diluted_market_cap"]) if "fully_diluted_market_cap" in quote else None,
+                    tvl=float(quote["tvl"]) if "tvl" in quote else None,
+                    timestamp=current_time
                 )
-                existing_data = result.scalar_one_or_none()
                 
-                if existing_data:
-                    # Update existing data
-                    existing_data.price_usd = float(quote["price"])
-                    existing_data.market_cap_usd = float(quote["market_cap"])
-                    existing_data.volume_usd_24hr = float(quote["volume_24h"])
-                    existing_data.change_percent_24hr = float(quote["percent_change_24h"])
-                    existing_data.timestamp = current_time
-                    success_count += 1
-                else:
-                    # Create new data if none exists
-                    live_data = CryptoLiveData(
-                        id=f"{asset_data['symbol']}_{current_time.strftime('%Y%m%d_%H%M%S')}",
-                        asset_id=asset_data["symbol"],
-                        price_usd=float(quote["price"]),
-                        market_cap_usd=float(quote["market_cap"]),
-                        volume_usd_24hr=float(quote["volume_24h"]),
-                        change_percent_24hr=float(quote["percent_change_24h"]),
-                        timestamp=current_time
-                    )
-                    db.add(live_data)
-                    success_count += 1
+                # Add the new live data
+                db.add(live_data)
+                success_count += 1
+                
             except Exception as e:
+                error_count += 1
                 print(f"Error processing asset {asset_data['symbol']}: {str(e)}")
                 continue
         
+        # Commit all changes at once
         await db.commit()
-        print(f"Successfully updated live data for {success_count}/{len(assets_data)} assets at {current_time}")
+        print(f"[{current_time}] Successfully updated live data for {success_count}/{len(assets_data)} assets. Errors: {error_count}")
+        
     except Exception as e:
         await db.rollback()
-        print(f"Error updating live data: {str(e)}")
+        print(f"[{datetime.utcnow()}] Error updating live data: {str(e)}")
         raise
 
 async def update_historical_data(db: AsyncSession):
@@ -217,11 +222,20 @@ async def update_historical_data(db: AsyncSession):
                         id=historical_data_id,
                         asset_id=asset_data["symbol"],
                         price_usd=float(quote["price"]),
-                        market_cap_usd=float(quote["market_cap"]),
-                        volume_usd_24hr=float(quote["volume_24h"]),
-                        change_percent_24hr=float(quote["percent_change_24h"]),
-                        timestamp=current_time,
-                        interval="24h"
+                        market_cap=float(quote["market_cap"]),
+                        volume_24h=float(quote["volume_24h"]),
+                        volume_change_24h=float(quote["volume_change_24h"]) if "volume_change_24h" in quote else None,
+                        percent_change_1h=float(quote["percent_change_1h"]) if "percent_change_1h" in quote else None,
+                        percent_change_24h=float(quote["percent_change_24h"]),
+                        percent_change_7d=float(quote["percent_change_7d"]) if "percent_change_7d" in quote else None,
+                        percent_change_30d=float(quote["percent_change_30d"]) if "percent_change_30d" in quote else None,
+                        percent_change_60d=float(quote["percent_change_60d"]) if "percent_change_60d" in quote else None,
+                        percent_change_90d=float(quote["percent_change_90d"]) if "percent_change_90d" in quote else None,
+                        market_cap_dominance=float(quote["market_cap_dominance"]) if "market_cap_dominance" in quote else None,
+                        fully_diluted_market_cap=float(quote["fully_diluted_market_cap"]) if "fully_diluted_market_cap" in quote else None,
+                        tvl=float(quote["tvl"]) if "tvl" in quote else None,
+                        interval="24h",
+                        timestamp=current_time
                     )
                     db.add(historical_data)
                     success_count += 1
@@ -248,26 +262,25 @@ async def start_data_updates():
                 
                 # Check if it's time for live update
                 if (current_time - last_live_update).total_seconds() >= LIVE_UPDATE_INTERVAL:
-                    print("Starting live data update...")
+                    print(f"[{current_time}] Starting live data update...")
                     await update_live_data(db)
                     last_live_update = current_time
-                    print(f"Next live update in {LIVE_UPDATE_INTERVAL/60} minutes")
+                    print(f"[{current_time}] Live data update completed. Next update in {LIVE_UPDATE_INTERVAL} seconds")
                 
                 # Check if it's time for historical update (every hour)
                 if (current_time - last_historical_update).total_seconds() >= HISTORICAL_UPDATE_INTERVAL:
-                    print("Starting historical data update...")
+                    print(f"[{current_time}] Starting historical data update...")
                     await update_historical_data(db)
                     last_historical_update = current_time
-                    print(f"Next historical update in {HISTORICAL_UPDATE_INTERVAL/60} minutes")
+                    print(f"[{current_time}] Historical data update completed. Next update in {HISTORICAL_UPDATE_INTERVAL/60} minutes")
                 
                 # Sleep for CHECK_INTERVAL seconds before checking again
-                print(f"Sleeping for {CHECK_INTERVAL/60} minutes before next check...")
                 await asyncio.sleep(CHECK_INTERVAL)
                 
             except Exception as e:
-                print(f"Error in data update cycle: {str(e)}")
+                print(f"[{datetime.utcnow()}] Error in data update cycle: {str(e)}")
                 await db.rollback()
-                print(f"Sleeping for {CHECK_INTERVAL/60} minutes before retrying...")
+                print(f"[{datetime.utcnow()}] Sleeping for {CHECK_INTERVAL} seconds before retrying...")
                 await asyncio.sleep(CHECK_INTERVAL)
 
 @router.on_event("startup")
@@ -319,15 +332,15 @@ async def sync_crypto_assets(db: AsyncSession = Depends(get_session)):
             quote = asset_data["quote"]["USD"]
             asset = CryptoAsset(
                 id=asset_data["symbol"],
-                rank=int(asset_data["cmc_rank"]),
+                cmc_rank=int(asset_data["cmc_rank"]),
                 symbol=asset_data["symbol"],
                 name=asset_data["name"],
                 supply=float(asset_data["circulating_supply"]),
                 max_supply=float(asset_data["max_supply"]) if asset_data["max_supply"] else None,
-                market_cap_usd=float(quote["market_cap"]),
-                volume_usd_24hr=float(quote["volume_24h"]),
+                market_cap=float(quote["market_cap"]),
+                volume_24h=float(quote["volume_24h"]),
                 price_usd=float(quote["price"]),
-                change_percent_24hr=float(quote["percent_change_24h"]),
+                percent_change_24h=float(quote["percent_change_24h"]),
                 vwap_24hr=float(quote["vwap_24h"]) if quote["vwap_24h"] else None,
                 explorer=asset_data.get("explorer")
             )
@@ -357,7 +370,7 @@ async def sync_crypto_assets(db: AsyncSession = Depends(get_session)):
 async def get_crypto_assets(skip: int = 0, limit: int = 100, db: AsyncSession = Depends(get_session)):
     result = await db.execute(
         select(CryptoAsset)
-        .order_by(CryptoAsset.rank)
+        .order_by(CryptoAsset.cmc_rank)
         .offset(skip)
         .limit(limit)
     )

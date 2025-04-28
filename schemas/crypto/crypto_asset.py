@@ -18,6 +18,11 @@ class CryptoAssetBase(BaseModel):
     self_reported_circulating_supply: Optional[float] = None
     self_reported_market_cap: Optional[float] = None
     tvl_ratio: Optional[float] = None
+    last_updated: Optional[datetime] = None
+    price_usd: Optional[float] = None
+    market_cap: Optional[float] = None
+    volume_24h: Optional[float] = None
+    percent_change_24h: Optional[float] = None
 
 class CryptoAssetCreate(CryptoAssetBase):
     id: str
