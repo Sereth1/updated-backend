@@ -33,14 +33,4 @@ async def create_crypto_historical_data(data: CryptoHistoricalDataCreate, db: As
     db.add(db_data)
     await db.commit()
     await db.refresh(db_data)
-    return db_data
-
-@router.get("/historical-data", response_model=List[CryptoHistoricalDataOut])
-async def get_crypto_historical_data(db: AsyncSession = Depends(get_session)):
-    result = await db.execute(select(CryptoHistoricalData))
-    return result.scalars().all()
-
-@router.get("/historical-data/{asset_id}", response_model=List[CryptoHistoricalDataOut])
-async def get_crypto_historical_data_by_asset(asset_id: str, db: AsyncSession = Depends(get_session)):
-    result = await db.execute(select(CryptoHistoricalData).where(CryptoHistoricalData.asset_id == asset_id))
-    return result.scalars().all() 
+    return db_data 

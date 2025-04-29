@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from typing import List
+from typing import List, Optional
 import httpx
 import asyncio
 from datetime import datetime, timedelta
@@ -298,6 +298,7 @@ async def start_data_updates():
 async def startup_event():
     asyncio.create_task(start_data_updates())
 
+# Live Data Endpoints
 @router.get("/live", response_model=List[CryptoLiveDataOut])
 async def get_live_data(skip: int = 0, limit: int = 100, db: AsyncSession = Depends(get_session)):
     result = await db.execute(
@@ -308,6 +309,20 @@ async def get_live_data(skip: int = 0, limit: int = 100, db: AsyncSession = Depe
     )
     return result.scalars().all()
 
+@router.get("/live/{asset_id}", response_model=CryptoLiveDataOut)
+async def get_live_data_by_asset(asset_id: str, db: AsyncSession = Depends(get_session)):
+    result = await db.execute(
+        select(CryptoLiveData)
+        .where(CryptoLiveData.asset_id == asset_id)
+        .order_by(CryptoLiveData.timestamp.desc())
+        .limit(1)
+    )
+    data = result.scalar_one_or_none()
+    if not data:
+        raise HTTPException(status_code=404, detail="Live data not found")
+    return data
+
+# Historical Data Endpoints
 @router.get("/historical", response_model=List[CryptoHistoricalDataOut])
 async def get_historical_data(interval: str = "1h", skip: int = 0, limit: int = 100, db: AsyncSession = Depends(get_session)):
     result = await db.execute(
@@ -332,6 +347,27 @@ async def get_asset_historical_data(asset_id: str, interval: str = "1h", skip: i
         .limit(limit)
     )
     return result.scalars().all()
+
+# Crypto Asset Endpoints
+@router.get("/", response_model=List[CryptoAssetOut])
+async def get_crypto_assets(skip: int = 0, limit: int = 100, db: AsyncSession = Depends(get_session)):
+    result = await db.execute(
+        select(CryptoAsset)
+        .order_by(CryptoAsset.cmc_rank)
+        .offset(skip)
+        .limit(limit)
+    )
+    return result.scalars().all()
+
+@router.get("/{asset_id}", response_model=CryptoAssetOut)
+async def get_crypto_asset(asset_id: str, db: AsyncSession = Depends(get_session)):
+    result = await db.execute(
+        select(CryptoAsset).where(CryptoAsset.id == asset_id)
+    )
+    asset = result.scalar_one_or_none()
+    if not asset:
+        raise HTTPException(status_code=404, detail="Asset not found")
+    return asset
 
 @router.post("/sync", response_model=List[CryptoAssetOut])
 async def sync_crypto_assets(db: AsyncSession = Depends(get_session)):
@@ -376,26 +412,6 @@ async def sync_crypto_assets(db: AsyncSession = Depends(get_session)):
     except Exception as e:
         await db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
-
-@router.get("/", response_model=List[CryptoAssetOut])
-async def get_crypto_assets(skip: int = 0, limit: int = 100, db: AsyncSession = Depends(get_session)):
-    result = await db.execute(
-        select(CryptoAsset)
-        .order_by(CryptoAsset.cmc_rank)
-        .offset(skip)
-        .limit(limit)
-    )
-    return result.scalars().all()
-
-@router.get("/{asset_id}", response_model=CryptoAssetOut)
-async def get_crypto_asset(asset_id: str, db: AsyncSession = Depends(get_session)):
-    result = await db.execute(
-        select(CryptoAsset).where(CryptoAsset.id == asset_id)
-    )
-    asset = result.scalar_one_or_none()
-    if not asset:
-        raise HTTPException(status_code=404, detail="Asset not found")
-    return asset
 
 @router.post("/assets", response_model=CryptoAssetOut)
 async def create_crypto_asset(asset: CryptoAssetCreate, db: AsyncSession = Depends(get_session)):

@@ -31,17 +31,4 @@ async def create_crypto_live_data(data: CryptoLiveDataCreate, db: AsyncSession =
     db.add(db_data)
     await db.commit()
     await db.refresh(db_data)
-    return db_data
-
-@router.get("/live-data", response_model=List[CryptoLiveDataOut])
-async def get_crypto_live_data(db: AsyncSession = Depends(get_session)):
-    result = await db.execute(select(CryptoLiveData))
-    return result.scalars().all()
-
-@router.get("/live-data/{asset_id}", response_model=CryptoLiveDataOut)
-async def get_crypto_live_data_by_asset(asset_id: str, db: AsyncSession = Depends(get_session)):
-    result = await db.execute(select(CryptoLiveData).where(CryptoLiveData.asset_id == asset_id))
-    data = result.scalar_one_or_none()
-    if not data:
-        raise HTTPException(status_code=404, detail="Live data not found")
-    return data 
+    return db_data 
