@@ -7,6 +7,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from router.llm import llm_idea, llm_message, llm_snippet, llm_collection, llm_provider, llm_keys
 from router.wallet import assets, wallet
 from router.crypto import crypto_asset, crypto_live_data, crypto_historical_data
+from router.location import user_location_logs
+from router.location import user_current_location
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):       
@@ -29,6 +31,8 @@ app = FastAPI(
         {"name": "Assets", "description": "Supported cryptocurrencies, tokens, and fiat currencies"},
         {"name": "Crypto", "description": "Cryptocurrency market data and information"},
         {"name": "LLM Providers", "description": "Available LLM API providers"},
+        {"name":"Location", "description": "User location logs"},
+       
     ]
 )
 
@@ -57,3 +61,5 @@ app.include_router(llm_keys, tags=["LLM Keys"])
 app.include_router(crypto_asset, prefix="/crypto", tags=["Crypto"])
 app.include_router(crypto_live_data, prefix="/crypto", tags=["Crypto"])
 app.include_router(crypto_historical_data, prefix="/crypto", tags=["Crypto"])
+app.include_router(user_location_logs.router, prefix="/location", tags=["Location"])
+app.include_router(user_current_location.router, prefix="/location", tags=["Location"])
