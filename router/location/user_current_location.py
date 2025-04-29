@@ -7,12 +7,13 @@ from database import get_session
 from models.location.user_current_location import UserCurrentLocation as DBCurrentLocation
 from schemas.location.user_current_location import UserCurrentLocation
 from datetime import datetime
+from fastapi import Body
 
 router = APIRouter()
 
 @router.post("/user-current-location", response_model=UserCurrentLocation)
 async def upsert_user_current_location(
-    data: UserCurrentLocation,
+    data: UserCurrentLocation = Body(...), 
     db: AsyncSession = Depends(get_session)
 ):
     stmt = pg_insert(DBCurrentLocation).values(
