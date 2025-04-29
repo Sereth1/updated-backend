@@ -9,7 +9,7 @@ class UserCurrentLocation(BaseModel):
     city: str
     region: str
     timezone: Optional[str]
-    updated_at: Optional[datetime]
+    updated_at: Optional[datetime] = None
 
     model_config = {
         "from_attributes": True
