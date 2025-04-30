@@ -10,6 +10,7 @@ class UserLocationLog(BaseModel):
     country: str
     city: str
     region: str
+    timezone: Optional[str]
     created_at: Optional[datetime]
     updated_at: Optional[datetime]
 

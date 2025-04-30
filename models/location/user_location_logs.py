@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, DateTime, ForeignKey
+from sqlalchemy import Column, String, DateTime, ForeignKey,Mapped,mapped_column
 from database import Base
 
 class UserLocationLog(Base):
@@ -12,3 +12,4 @@ class UserLocationLog(Base):
     region = Column(String, nullable=False)
     created_at = Column(DateTime, nullable=False)   # ✅ match DB column name
     updated_at = Column(DateTime, nullable=False)   # ✅ match DB column name
+    timezone: Mapped[str] = mapped_column(String)
