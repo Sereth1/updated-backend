@@ -1,15 +1,17 @@
-from sqlalchemy import Column, String, DateTime, ForeignKey,Mapped,mapped_column
+from sqlalchemy import String, DateTime, ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column
 from database import Base
+from datetime import datetime
 
 class UserLocationLog(Base):
     __tablename__ = "user_location_logs"
 
-    id = Column(String, primary_key=True, index=True)
-    user_id = Column(String, ForeignKey("user.id"), nullable=False)
-    ip = Column(String, nullable=False)
-    country = Column(String, nullable=False)
-    city = Column(String, nullable=False)
-    region = Column(String, nullable=False)
-    created_at = Column(DateTime, nullable=False)   # ✅ match DB column name
-    updated_at = Column(DateTime, nullable=False)   # ✅ match DB column name
+    id: Mapped[str] = mapped_column(String, primary_key=True, index=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("user.id"))
+    ip: Mapped[str] = mapped_column(String)
+    country: Mapped[str] = mapped_column(String)
+    city: Mapped[str] = mapped_column(String)
+    region: Mapped[str] = mapped_column(String)
     timezone: Mapped[str] = mapped_column(String)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
