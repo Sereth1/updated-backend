@@ -4,10 +4,10 @@ from database import Base
 from datetime import datetime
 
 class UserLocationLog(Base):
-    __tablename__ = "user_location_logs"
+    __tablename__ = "user_location_logs"  # ✅ table name in DB
 
     id: Mapped[str] = mapped_column(String, primary_key=True, index=True)
-    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"))
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"))  # ✅ links to users table
     ip: Mapped[str] = mapped_column(String)
     country: Mapped[str] = mapped_column(String)
     city: Mapped[str] = mapped_column(String)

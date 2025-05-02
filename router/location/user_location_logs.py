@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy.exc import SQLAlchemyError
 from database import get_session
 from models.location.user_location_logs import UserLocationLog as DBUserLocationLog
 from schemas.location.user_location_logs import UserLocationLog as UserLocationLogSchema
@@ -17,7 +18,6 @@ async def get_user_location_logs(db: AsyncSession = Depends(get_session)):
     result = await db.execute(select(DBUserLocationLog))
     return result.scalars().all()
 
-
 # GET single log by ID
 @router.get("/user-location-logs/{user_location_log_id}", response_model=UserLocationLogSchema)
 async def get_user_location_log(user_location_log_id: str, db: AsyncSession = Depends(get_session)):
@@ -28,7 +28,6 @@ async def get_user_location_log(user_location_log_id: str, db: AsyncSession = De
     if not user_location_log:
         raise HTTPException(status_code=404, detail="User location log not found")
     return user_location_log
-
 
 # GET last log by user_id
 @router.get("/user-location-logs/last/{user_id}", response_model=UserLocationLogSchema)
@@ -43,7 +42,6 @@ async def get_last_user_location_log(user_id: str, db: AsyncSession = Depends(ge
     if not last_log:
         raise HTTPException(status_code=404, detail="No location logs found for this user")
     return last_log
-
 
 # POST create new log
 @router.post("/user-location-logs", response_model=UserLocationLogSchema)
@@ -66,8 +64,7 @@ async def create_user_location_log(user_location_log: UserLocationLogCreate, db:
         return new_log
     except SQLAlchemyError as e:
         await db.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
-
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 # PUT update existing log
 @router.put("/user-location-logs/{user_location_log_id}", response_model=UserLocationLogSchema)
