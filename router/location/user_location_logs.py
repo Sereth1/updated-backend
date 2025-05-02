@@ -46,22 +46,26 @@ async def get_last_user_location_log(user_id: str, db: AsyncSession = Depends(ge
 
 # POST create new log
 @router.post("/user-location-logs", response_model=UserLocationLogSchema)
-async def create_user_location_log(user_location_log: UserLocationLogSchema, db: AsyncSession = Depends(get_session)):
-    new_log = DBUserLocationLog(
-        id=str(uuid.uuid4()),
-        user_id=user_location_log.user_id,
-        ip=user_location_log.ip,
-        country=user_location_log.country,
-        city=user_location_log.city,
-        region=user_location_log.region,
-        timezone=user_location_log.timezone,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow(),
-    )
-    db.add(new_log)
-    await db.commit()
-    await db.refresh(new_log)
-    return new_log
+async def create_user_location_log(user_location_log: UserLocationLogCreate, db: AsyncSession = Depends(get_session)):
+    try:
+        new_log = DBUserLocationLog(
+            id=str(uuid.uuid4()),
+            user_id=user_location_log.user_id,
+            ip=user_location_log.ip,
+            country=user_location_log.country,
+            city=user_location_log.city,
+            region=user_location_log.region,
+            timezone=user_location_log.timezone,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow(),
+        )
+        db.add(new_log)
+        await db.commit()
+        await db.refresh(new_log)
+        return new_log
+    except SQLAlchemyError as e:
+        await db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # PUT update existing log
