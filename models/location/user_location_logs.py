@@ -7,7 +7,7 @@ class UserLocationLog(Base):
     __tablename__ = "user_location_logs"
 
     id: Mapped[str] = mapped_column(String, primary_key=True, index=True)
-    user_id: Mapped[str] = mapped_column(ForeignKey("user.id"))
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"))
     ip: Mapped[str] = mapped_column(String)
     country: Mapped[str] = mapped_column(String)
     city: Mapped[str] = mapped_column(String)
