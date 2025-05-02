@@ -3,7 +3,7 @@ from typing import Optional
 from datetime import datetime
 from uuid import UUID
 
-# Response model
+# Used in GET/response
 class UserLocationLog(BaseModel):
     id: UUID
     user_id: str
@@ -19,7 +19,7 @@ class UserLocationLog(BaseModel):
         "from_attributes": True
     }
 
-# Create model
+# Used in POST request
 class UserLocationLogCreate(BaseModel):
     user_id: str
     ip: str
