@@ -4,6 +4,7 @@ from sqlalchemy.future import select
 from database import get_session
 from models.location.user_location_logs import UserLocationLog as DBUserLocationLog
 from schemas.location.user_location_logs import UserLocationLog as UserLocationLogSchema
+from schemas.location.user_location_logs import UserLocationLogCreate
 from typing import List
 from datetime import datetime
 import uuid
