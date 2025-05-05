@@ -1,0 +1,1 @@
+use .venv and the run it with the uvicorn main:app --reload
